@@ -1,0 +1,11 @@
+nct_id,company,molecule,phase,indication,status,start_year,enrollment,is_simulated
+NCT03548987,Eli Lilly,tirzepatide,Phase 3,Type 2 Diabetes (SURPASS-1),Completed,2018,478,0
+NCT03954834,Eli Lilly,tirzepatide,Phase 3,Type 2 Diabetes (SURPASS-2),Completed,2019,1879,0
+NCT04039503,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-1),Completed,2019,2539,0
+NCT04657016,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-2),Completed,2021,938,0
+NCT05848739,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-5, head-to-head vs semaglutide),Completed,2023,751,0
+NCT04881760,Eli Lilly,orforglipron,Phase 3,Obesity (ATTAIN-1),Active,2022,607,0
+NCT04977479,Eli Lilly,orforglipron,Phase 3,Type 2 Diabetes (ACHIEVE-1),Active,2021,497,0
+NCT03552757,Novo Nordisk,semaglutide,Phase 3,Obesity (STEP-1),Completed,2018,1961,0
+NCT04283175,Novo Nordisk,semaglutide,Phase 3,Heart Failure (SELECT),Completed,2020,17604,0
+NCT05046933,Novo Nordisk,semaglutide,Phase 3,Obesity (STEP-UP),Completed,2021,1410,0

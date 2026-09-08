@@ -1,0 +1,14 @@
+brand_id,brand_name,company,molecule,category,region_id,year,revenue_usd_m,scripts_units,is_simulated
+mounjaro,Mounjaro (tirzepatide T2D),Eli Lilly,tirzepatide,T2D,GLOBAL,2022,4824,0,0
+mounjaro,Mounjaro (tirzepatide T2D),Eli Lilly,tirzepatide,T2D,GLOBAL,2023,9624,0,0
+mounjaro,Mounjaro (tirzepatide T2D),Eli Lilly,tirzepatide,T2D,GLOBAL,2024,11532,0,0
+zepbound,Zepbound (tirzepatide obesity),Eli Lilly,tirzepatide,obesity,GLOBAL,2023,176,0,0
+zepbound,Zepbound (tirzepatide obesity),Eli Lilly,tirzepatide,obesity,GLOBAL,2024,4925,0,0
+trulicity,Trulicity (dulaglutide),Eli Lilly,dulaglutide,T2D,GLOBAL,2022,7441,0,0
+trulicity,Trulicity (dulaglutide),Eli Lilly,dulaglutide,T2D,GLOBAL,2023,7131,0,0
+trulicity,Trulicity (dulaglutide),Eli Lilly,dulaglutide,T2D,GLOBAL,2024,5250,0,0
+ozempic,Ozempic (semaglutide T2D),Novo Nordisk,semaglutide,T2D,GLOBAL,2022,8457,0,0
+ozempic,Ozempic (semaglutide T2D),Novo Nordisk,semaglutide,T2D,GLOBAL,2023,13851,0,0
+ozempic,Ozempic (semaglutide T2D),Novo Nordisk,semaglutide,T2D,GLOBAL,2024,17530,0,0
+wegovy,Wegovy (semaglutide obesity),Novo Nordisk,semaglutide,obesity,GLOBAL,2023,4537,0,0
+wegovy,Wegovy (semaglutide obesity),Novo Nordisk,semaglutide,obesity,GLOBAL,2024,8398,0,0

@@ -1,0 +1,13 @@
+year,molecule,event_type,report_count,serious_count,is_simulated
+2024,tirzepatide,Gastrointestinal,15230,3410,0
+2024,tirzepatide,Nausea & Vomiting,11870,2210,0
+2024,tirzepatide,Weight Decrease,7420,980,0
+2024,tirzepatide,Injection Site,3950,310,0
+2024,semaglutide,Gastrointestinal,18930,4520,0
+2024,semaglutide,Nausea & Vomiting,14210,2870,0
+2024,semaglutide,Weight Decrease,8610,1120,0
+2024,semaglutide,Injection Site,5210,420,0
+2023,tirzepatide,Gastrointestinal,9810,2140,0
+2023,tirzepatide,Nausea & Vomiting,7630,1410,0
+2023,semaglutide,Gastrointestinal,13420,3120,0
+2023,semaglutide,Nausea & Vomiting,10110,1980,0
