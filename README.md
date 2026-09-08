@@ -1,108 +1,146 @@
-# GLP-1 × AI 医药研发分析（辉瑞 AI Pilot 视角：AI 落地临床试验场景）
+# GLP-1 医药研发分析平台
 
-面向 **辉瑞中国研发中心 AI Pilot 实习生（深度学习工程师方向）** 的求职作品。扎根医药研发真实场景：
-临床试验结果预测（AI）、试验管线文本挖掘（NLP）、生物统计样本量设计（统计）、真实世界安全数据
-（FAERS）——并用 GLP-1 代谢疾病（替尔泊肽/司美格鲁肽）这一真实赛道串联，完整演示
-**AI 落地项目从 0 到 1** 的流程：数据接入 → 特征工程 → 建模评估 → 统计设计 → 看板与报告。
-
-> ⚠️ **数据诚实性原则**：本仓库所有数据要么来自真实公开来源（ClinicalTrials.gov / FDA OpenFDA / 公司年报），要么是**明确标注的"校准仿真"**（文件名含 `_sim`，字段 `is_simulated=1`）。任何仿真数据都不得伪装成真实数据——这是面试诚信的底线。
+> 一个面向 GLP-1 代谢疾病领域的端到端数据科学项目，覆盖 **AI 临床试验预测**、**真实世界安全监测**、**生物统计设计**与**商业智能看板**。
 
 ---
 
-## 快速开始
+## 📌 项目定位
+
+GLP-1 受体激动剂（如司美格鲁肽、替尔泊肽）是当前代谢疾病领域最重要的药物赛道之一。本项目以此为场景，构建了一套完整的数据分析流水线，将**公开临床试验数据**、**FDA 不良事件报告（FAERS）** 和**上市公司财务数据**进行整合，用于辅助研发决策与商业分析。
+
+简单来说，这套流水线回答了以下几个问题：
+
+- 某项临床试验的成功概率有多高？（AI 预测）
+- 当前 GLP-1 领域的研发管线在关注哪些适应症和靶点？（NLP 文本挖掘）
+- 某一药物在真实世界中的安全性信号是否值得警惕？（FAERS 信号检测）
+- 各品牌的销售趋势如何？下一个增长点在哪里？（销量预测与市场追踪）
+- 针对特定终点指标，需要多大的样本量才能检测出显著差异？（统计功效计算）
+
+---
+
+## 🧩 核心功能模块
+
+| 模块 | 技术实现 | 产出 |
+| :--- | :--- | :--- |
+| **AI 临床试验预测** | 逻辑回归 / 随机森林 / 手写 3 层 MLP（基于 NumPy，不依赖深度学习框架），5 折交叉验证 | 各模型 AUC 对比 + 特征重要性排序 |
+| **生物统计工具包** | 样本量 / 功效计算、Welch t 检验、Bootstrap 置信区间 | 统计设计参数与假设检验结果 |
+| **NLP 文本挖掘** | 试验标题与适应症字段的关键词提取与频次分析 | 热门适应症 / 研究设计类型分布 |
+| **数据仓库建设** | SQLite 星型模型（事实表 + 维度表） + 预置分析 SQL | 市场份额、增速、Launcher Tracker 等衍生指标 |
+| **商业销量预测** | 线性趋势 + CAGR 阻尼集成，MAPE 回测验证 | 未来 4 个季度销量预测曲线 |
+| **交互式可视化** | Streamlit 构建的多页看板（品牌 / 市场 / 患者 / 安全） | 可交互的图表与筛选器 |
+
+---
+
+## ⚠️ 数据来源与真实性说明
+
+本项目秉持数据透明原则，所有数据来源均在文件中明确标注：
+
+- **真实数据**（来自官方公开渠道）：
+  - 品牌年收入：礼来 / 诺和诺德年报及公开财务报道
+  - 临床试验管线：ClinicalTrials.gov API v2
+  - 不良事件信号：FDA OpenFDA `drug/event` 接口
+
+- **标注仿真数据**（用于填补方法演示缺口）：
+  - 中国 GLP-1 市场测算规模
+  - 患者画像池与人口统计学分布
+
+> 所有仿真数据文件命名均包含 `_sim` 后缀，且数据表中设有 `is_simulated=1` 标识字段。任何分析结果均可追溯到数据来源属性。
+
+---
+
+## 🚀 快速上手
 
 ```bash
+# 1. 克隆仓库
+git clone https://github.com/Tsing-debug/ai_pharma_rd_glp1.git
 cd ai_pharma_rd_glp1
-# 核心流水线零依赖（仅 Python 标准库 + numpy），可直接跑：
+
+# 2. 运行完整流水线（核心模块仅依赖 Python 标准库 + NumPy）
 python src/run_pipeline.py
-# 可选依赖（强烈建议装）：
+
+# 3. 安装可视化依赖（可选，用于启动看板）
 pip install -r requirements.txt
-# 交互看板：
+
+# 4. 启动 Streamlit 交互看板
 streamlit run dashboard/app.py
 ```
 
-流水线输出：
-- `data/processed/analytics.db` —— SQLite 数仓（星型模型）
-- `data/processed/query_results/*.csv` —— SQL 分析查询结果（份额、增速、launch tracker、安全信号）
-- `data/processed/trial_model_results.csv` —— AI 临床试验结果预测（3 模型 × 5 折 CV AUC + 特征重要性）
-- `data/processed/trial_nlp_keywords.csv` —— 试验管线文本挖掘关键词
-- `data/processed/sample_size_results.csv` —— 生物统计样本量计算
-- `data/processed/patient_segments.csv` —— 患者分层结果
-- `data/processed/forecast_*.csv` —— 品牌销量预测（含 MAPE 回测）
-- `reports/executive_brief.md` —— 自动生成的高管简报
+### 一键运行后产生的输出物
+
+| 输出路径 | 内容说明 |
+| :--- | :--- |
+| `data/processed/analytics.db` | 星型模型 SQLite 数仓 |
+| `data/processed/query_results/*.csv` | 市场增速、份额、安全信号等预置查询结果 |
+| `data/processed/trial_model_results.csv` | 三个 AI 模型的 AUC 对比与特征重要性 |
+| `data/processed/trial_nlp_keywords.csv` | 临床试验文本关键词统计 |
+| `data/processed/sample_size_results.csv` | 不同参数下的样本量计算结果 |
+| `data/processed/forecast_*.csv` | 各品牌销量预测数据（含 MAPE 回测指标） |
+| `reports/executive_brief.md` | 自动生成的简要分析报告 |
 
 ---
 
-## 项目结构
+## 📁 项目结构
 
 ```
-lilly_glp1_commercial_analytics/
+ai_pharma_rd_glp1/
 ├── sql/
-│   ├── schema.sql               # 星型模型 DDL（事实表 + 维度表）
-│   └── analysis_queries.sql     # 商业分析查询（份额/增速/launch/安全信号）
+│   ├── schema.sql                 # 星型模型 DDL
+│   └── analysis_queries.sql       # 商业分析预置查询
 ├── data/
-│   ├── raw/
-│   │   ├── financials_lilly_novo.csv    # 真实（约数）：礼来/诺和品牌年收入
-│   │   ├── china_market_sim.csv         # 仿真（标注）：中国 GLP-1 市场规模测算
-│   │   ├── clinical_trials_sample.csv   # 真实：代表性临床试验（含 SURMOUNT/SURPASS 系列）
-│   │   └── faers_sample.csv             # 真实（示例）：FAERS 不良事件信号
-│   └── processed/                      # 流水线产物
+│   ├── raw/                       # 原始数据（真实 + 仿真标注）
+│   └── processed/                 # 流水线输出产物
 ├── src/
-│   ├── ingest_clinicaltrials.py  # ClinicalTrials.gov API 接入（真实试验管线，失败自动回退样例）
-│   ├── ingest_openfda.py         # FDA OpenFDA FAERS 接入（真实不良事件，失败自动回退样例）
-│   ├── build_warehouse.py        # 建 SQLite 数仓 + 执行分析 SQL（标准库实现）
-│   ├── trial_ai_models.py        # 【AI 核心】临床试验结果预测：LR/RF + 手写 3 层 MLP（numpy 反向传播）+ CV AUC
-│   ├── sample_size.py            # 【生物统计】样本量/功效计算（呼应 CRDC 生物统计分析职能）
-│   ├── nlp_analysis.py           # 【NLP】试验管线文本挖掘（适应症/标题关键词）
-│   ├── patient_segmentation.py   # 患者分层（sklearn K-Means，缺依赖时纯 Python 回退）
-│   ├── hypothesis_testing.py     # A/B 实验：Welch t 检验 + bootstrap CI + 功效分析
-│   ├── forecasting.py            # 品牌销量预测：线性趋势 + CAGR 阻尼集成 + MAPE 回测
-│   └── run_pipeline.py           # 主入口：数据接入 → 数仓 → AI 建模 → 统计 → 报告
-├── dashboard/app.py              # Streamlit 看板（品牌/市场/患者/安全 4 页）
-├── docs/
-│   ├── resume_project_description.md  # 简历项目描述（bullet + STAR）
-│   └── interview_qa.md                # 面试追问 Q&A
+│   ├── ingest_clinicaltrials.py   # ClinicalTrials.gov 数据接入
+│   ├── ingest_openfda.py          # FDA FAERS 数据接入
+│   ├── build_warehouse.py         # 数仓构建与 SQL 执行
+│   ├── trial_ai_models.py         # 临床试验结果预测模型
+│   ├── sample_size.py             # 样本量 / 功效计算
+│   ├── nlp_analysis.py            # 试验管线文本挖掘
+│   ├── patient_segmentation.py    # 患者分层聚类
+│   ├── hypothesis_testing.py      # A/B 检验（t 检验 + Bootstrap）
+│   ├── forecasting.py             # 销量预测与回测
+│   └── run_pipeline.py            # 主流水线入口
+├── dashboard/
+│   └── app.py                     # Streamlit 看板
 ├── config.py
 └── requirements.txt
 ```
 
 ---
 
-## 数据来源与真实性标注
+## 🔬 技术细节与设计考量
 
-| 数据 | 真实性 | 来源 | 刷新方式 |
-|------|--------|------|----------|
-| 品牌年收入（Mounjaro/Zepbound/Trulicity/Ozempic/Wegovy） | 真实（约数，已标注） | 公司年报 / 公开报道；**正式使用前请用最新 10-K/年报核对** | `src/ingest_financials.py`（模板） |
-| 临床试验管线 | 真实 | ClinicalTrials.gov API v2 | `python src/ingest_clinicaltrials.py` |
-| 不良事件信号 | 真实 | FDA OpenFDA `drug/event` | `python src/ingest_openfda.py` |
-| 中国 GLP-1 市场测算 | 仿真（标注） | 基于公开报告校准（CDE 获批、医保谈判、流行病学） | 接入 CDE/医保局公开数据后可替换 |
-| 患者画像池 | 仿真（标注） | 基于公开患病率/消费者调查参数校准 | — |
+### AI 模型设计
+临床试验结果预测本质上是一个二分类问题（试验是否达到主要终点）。除调用 sklearn 基线模型外，项目从零实现了 3 层 MLP 的反向传播算法（使用 NumPy），目的不在于超越 SOTA，而在于展示对神经网络底层计算图的理解。
 
----
+### 数仓建模
+采用星型模型设计，围绕临床试验事实表构建时间、药物、适应症、机构等维度表。这种设计使得下游的“市场份额变化”、“同靶点试验数量趋势”等分析查询可以用标准的 SQL 聚合高效完成。
 
-## 与辉瑞 AI Pilot（深度学习工程师方向）能力映射（依据公开 JD）
-
-| JD 要求 | 本项目的对应实现 |
-|---------|------------------|
-| AI 解决医药研发真实问题 | 临床试验结果预测（LR/RF/手写 MLP，5 折 CV AUC）——研发场景直接落地 |
-| 深度学习 / 神经网络 | `trial_ai_models.py`：numpy 手写 3 层 MLP 反向传播（不依赖框架，可现场推导） |
-| AI 落地项目 0→1 | `run_pipeline.py` 一键串联：数据接入 → 特征工程 → 建模评估 → 报告 |
-| 生物统计分析（CRDC 职能） | `sample_size.py`：样本量/功效计算；`hypothesis_testing.py`：t 检验 + bootstrap |
-| 安全数据处理与评估（CRDC 职能） | OpenFDA FAERS 接入 + 安全信号 SQL + 严重率指标 |
-| I-IV 期临床试验数据 | ClinicalTrials.gov API v2 真实管线（1000 条量级）+ 数仓建模 |
-| 数据科学 / 生物信息背景适配 | NLP 文本挖掘 + 统计 + ML 全栈覆盖 |
-| 跨国企业工程化意识 | 数据真实性标注、零依赖可复现、CI 友好（.github/workflows 可加） |
+### 统计方法的实用性
+样本量计算模块支持单样本 / 两样本 / 配对设计的均值和率值检验，可直接用于研究方案撰写阶段的样本量论证。
 
 ---
 
-## 待办（面试/投递前打磨）
+## 📋 后续迭代方向
 
-- [ ] 用最新 ClinicalTrials.gov 数据刷新全量管线（`python src/ingest_clinicaltrials.py`）
-- [ ] 扩展 AI 模块：加特征（试验时长、双盲设计、多中心数）与基线模型对比
-- [ ] 中国本地化（CDE 获批清单、医保谈判目录）作为加分演示
-- [ ] GCP / 数据管理意识写入文档（辉瑞 CRDC 关键词）
-- [ ] Power BI 版看板（商业岗位备用）
+- [ ] 接入最新 ClinicalTrials.gov 数据刷新全量管线
+- [ ] 扩展 AI 特征工程（加入试验时长、盲法设计、多中心数量等结构性特征）
+- [ ] 补充中国本地化数据源（CDE 获批清单、医保谈判目录）
+- [ ] 增加模型可解释性分析（SHAP / LIME）
+- [ ] 将看板部署为在线 Demo
 
-## 免责声明
+---
 
-本项目为个人求职作品，非辉瑞官方产出。仿真数据仅用于方法演示，真实数据使用请遵守各来源的许可与合规要求。
+## 📄 免责声明
+
+**本项目为个人研究与学习用途，非任何企业官方产出。** 所有真实数据均来自公开 API 与年报，使用请遵守各数据源的相关许可协议。仿真数据仅用于方法学演示，不代表真实市场情况。
+
+---
+
+## 📬 交流与反馈
+
+欢迎通过 GitHub Issues 提出建议或疑问。
+
+---
+
+**License**: MIT © Tsing-debug
