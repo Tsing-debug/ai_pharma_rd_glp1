@@ -5,11 +5,14 @@
 输出：data/processed/patient_segments.csv + 各层画像汇总
 """
 import csv
+import logging
 import math
 import random
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -17,7 +20,7 @@ import config
 N_PATIENTS = 2000
 K = 4
 FEATURES = ["age", "bmi", "income_k", "glp1_aware", "cost_sensitive", "tech_savvy"]
-SEED = 42
+SEED = config.SEED
 
 try:
     import numpy as np
@@ -51,6 +54,19 @@ def generate_patient_pool() -> list[dict]:
             "is_simulated": 1,
         })
     return rows
+
+
+def _standardize(mat: list[list[float]]) -> list[list[float]]:
+    """按列 z-score 标准化（纯标准库，供无 sklearn 时回退，与 sklearn 路径保持一致）。"""
+    if not mat:
+        return mat
+    n_cols = len(mat[0])
+    means = [sum(r[c] for r in mat) / len(mat) for c in range(n_cols)]
+    sds = []
+    for c in range(n_cols):
+        var = sum((r[c] - means[c]) ** 2 for r in mat) / len(mat)
+        sds.append(math.sqrt(var) if var > 0 else 1.0)
+    return [[(r[c] - means[c]) / sds[c] for c in range(n_cols)] for r in mat]
 
 
 def _pure_python_kmeans(mat: list[list[float]], k: int, iters: int = 50, seed: int = SEED) -> list[int]:
@@ -102,8 +118,8 @@ def run_segmentation(patients: list[dict]) -> Path:
         labels = KMeans(n_clusters=K, n_init=10, random_state=SEED).fit_predict(X)
         method = "sklearn KMeans (StandardScaler)"
     else:
-        labels = _pure_python_kmeans(mat, K)
-        method = "纯 Python KMeans（回退，未标准化）"
+        labels = _pure_python_kmeans(_standardize(mat), K)
+        method = "纯 Python KMeans（回退，已标准化）"
     for p, lab in zip(patients, labels):
         p["segment"] = int(lab)
 
@@ -117,16 +133,17 @@ def run_segmentation(patients: list[dict]) -> Path:
 
 
 def _print_profiles(patients: list[dict], method: str):
-    print(f"[patient_segmentation] 方法: {method}，K={K}")
+    log.info(f"[patient_segmentation] 方法: {method}，K={K}")
     groups = defaultdict(list)
     for p in patients:
         groups[p["segment"]].append(p)
     for seg, rows in sorted(groups.items()):
         avg = lambda key: round(sum(r[key] for r in rows) / len(rows), 1)
-        print(f"  段{seg} (n={len(rows)}): 平均年龄 {avg('age')}, BMI {avg('bmi')}, "
+        log.info(f"  段{seg} (n={len(rows)}): 平均年龄 {avg('age')}, BMI {avg('bmi')}, "
               f"收入 {avg('income_k')}k, 知晓率 {avg('glp1_aware'):.2f}, "
               f"价格敏感 {avg('cost_sensitive'):.2f}, 数字渠道 {avg('tech_savvy'):.2f}")
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     run_segmentation(generate_patient_pool())

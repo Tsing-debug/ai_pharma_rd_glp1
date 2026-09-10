@@ -45,6 +45,10 @@ CREATE TABLE IF NOT EXISTS fact_trials (
     status TEXT,
     start_year INTEGER,
     enrollment INTEGER,
+    title TEXT,
+    design TEXT,
+    endpoint TEXT,
+    recruitment TEXT,
     is_simulated INTEGER DEFAULT 0
 );
 

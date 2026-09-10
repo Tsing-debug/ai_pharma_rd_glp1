@@ -6,10 +6,13 @@
 """
 import csv
 import json
+import logging
 import sys
 import urllib.request
 import urllib.parse
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -27,48 +30,91 @@ FIELDS = "protocolSection.identificationModule.nctId," \
          "protocolSection.designModule.enrollmentInfo.count," \
          "protocolSection.sponsorCollaboratorsModule.leadSponsor.name"
 
+MAX_PAGES = 5  # 分页上限（演示用，控制请求量）
 
-def fetch_from_api(limit=1000, out_csv: Path | None = None) -> Path | None:
-    """拉取真实数据，成功返回输出路径，失败或无结果返回 None。"""
-    params = {
-        "query.term": QUERY_TERM,
-        "fields": FIELDS,
-        "pageSize": str(limit),
-        "countTotal": "true",
-    }
-    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
-    try:
-        with urllib.request.urlopen(url, timeout=20) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:  # 网络/解析失败均回退
-        print(f"[ingest_clinicaltrials] API 不可用（{exc}），回退到样例数据。")
-        return None
 
+def fetch_from_api(limit=1000, out_csv: Path | None = None,
+                   max_pages: int = MAX_PAGES) -> Path | None:
+    """分页拉取真实数据（API v2 用 pageToken 翻页），成功返回输出路径，失败或无结果返回 None。"""
     rows = []
-    for s in payload.get("studies", []):
-        ps = s.get("protocolSection", {})
-        ident = ps.get("identificationModule", {})
-        design = ps.get("designModule", {})
-        cond = ps.get("conditionsModule", {})
-        status = ps.get("statusModule", {})
-        sponsor = ps.get("sponsorCollaboratorsModule", {}).get("leadSponsor", {})
+    page_token = None
+    page = 0
+    for page in range(max_pages):
+        params = {
+            "query.term": QUERY_TERM,
+            "fields": FIELDS,
+            "pageSize": str(limit),
+            "countTotal": "true",
+        }
+        if page_token:
+            params["pageToken"] = page_token
+        url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+        try:
+            with urllib.request.urlopen(url, timeout=20) as resp:
+                raw = resp.read().decode("utf-8")
+        except Exception as exc:  # 网络/超时/HTTP 错误 → 回退
+            log.warning(f"[ingest_clinicaltrials] API 请求失败（{type(exc).__name__}: {exc}），回退到样例数据。")
+            return None
 
-        phases = design.get("phases", [])
-        rows.append({
-            "nct_id": ident.get("nctId", ""),
-            "company": sponsor.get("name", ""),
-            "molecule": _detect_molecule(ident.get("briefTitle", "")),
-            "phase": ",".join(phases),
-            "indication": " | ".join(cond.get("conditions", [])),
-            "status": status.get("overallStatus", ""),
-            "start_year": int((status.get("startDateStruct", {}).get("date") or "0")[:4]) or 0,
-            "enrollment": design.get("enrollmentInfo", {}).get("count", 0) or 0,
-            "is_simulated": 0,
-        })
+        try:
+            payload = json.loads(raw)
+        except ValueError as exc:  # 响应非合法 JSON → 回退
+            log.warning(f"[ingest_clinicaltrials] API 响应解析失败（{type(exc).__name__}: {exc}），回退到样例数据。")
+            return None
+
+        for s in payload.get("studies", []):
+            rows.append(_extract_study(s))
+
+        page_token = payload.get("nextPageToken")
+        if not page_token:
+            break
     if not rows:  # 接口通了但无结果：按失败处理，回退样例
-        print("[ingest_clinicaltrials] API 返回 0 条结果，回退到样例数据。")
+        log.warning("[ingest_clinicaltrials] API 返回 0 条结果，回退到样例数据。")
         return None
+    log.info(f"[ingest_clinicaltrials] API 拉取 {len(rows)} 条（{page + 1} 页）")
     return _write_csv(rows, out_csv)
+
+
+def _extract_study(s: dict) -> dict:
+    """把一条 API study 记录转成统一 schema 的字典。"""
+    ps = s.get("protocolSection", {})
+    ident = ps.get("identificationModule", {})
+    design = ps.get("designModule", {})
+    cond = ps.get("conditionsModule", {})
+    status = ps.get("statusModule", {})
+    sponsor = ps.get("sponsorCollaboratorsModule", {}).get("leadSponsor", {})
+
+    phases = design.get("phases", [])
+
+    # 提取设计信息（如果 API 返回）
+    study_design = design.get("studyDesignInfo", [])
+    design_str = ", ".join([sd.get("name", "") for sd in study_design]) if study_design else ""
+
+    # 提取主要终点（如果 API 返回）
+    outcomes = ps.get("outcomesModule", {})
+    primary_endpoint = ""
+    if outcomes.get("primaryOutcomeMeasures"):
+        primary_endpoint = outcomes["primaryOutcomeMeasures"][0].get("title", "")
+
+    # 提取入组信息（如果 API 返回）
+    recruitment = design.get("recruitmentInfo", {}).get("conditionList", [])
+    recruitment_str = ", ".join(recruitment) if recruitment else ""
+
+    return {
+        "nct_id": ident.get("nctId", ""),
+        "company": sponsor.get("name", ""),
+        "molecule": _detect_molecule(ident.get("briefTitle", "")),
+        "phase": ",".join(phases),
+        "indication": " | ".join(cond.get("conditions", [])),
+        "status": status.get("overallStatus", ""),
+        "start_year": int((status.get("startDateStruct", {}).get("date") or "0")[:4]) or 0,
+        "enrollment": design.get("enrollmentInfo", {}).get("count", 0) or 0,
+        "title": ident.get("briefTitle", ""),
+        "design": design_str,
+        "endpoint": primary_endpoint,
+        "recruitment": recruitment_str,
+        "is_simulated": 0,
+    }
 
 
 def _detect_molecule(title: str) -> str:
@@ -83,7 +129,8 @@ def _write_csv(rows, out_csv: Path | None) -> Path:
     out_csv = out_csv or config.DATA_PROCESSED / "trials.csv"
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = ["nct_id", "company", "molecule", "phase", "indication",
-                  "status", "start_year", "enrollment", "is_simulated"]
+                  "status", "start_year", "enrollment", "title", "design", 
+                  "endpoint", "recruitment", "is_simulated"]
     with open(out_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -103,8 +150,9 @@ def load_fallback() -> Path:
 def main():
     config.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     out = fetch_from_api() or load_fallback()
-    print(f"[ingest_clinicaltrials] 完成 -> {out}")
+    log.info(f"[ingest_clinicaltrials] 完成 -> {out}")
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     main()

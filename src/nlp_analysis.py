@@ -8,10 +8,13 @@
 输出：data/processed/trial_nlp_keywords.csv
 """
 import csv
+import logging
 import re
 import sys
 from collections import Counter
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -44,7 +47,7 @@ def load_trials() -> list[dict]:
 def run() -> Path:
     trials = load_trials()
     if not trials:
-        print("[nlp_analysis] 无试验数据，跳过。")
+        log.info("[nlp_analysis] 无试验数据，跳过。")
         return config.DATA_PROCESSED / "trial_nlp_keywords.csv"
 
     all_counter: Counter = Counter()
@@ -69,11 +72,12 @@ def run() -> Path:
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"[nlp_analysis] 试验 {len(trials)} 条；全库 Top10: "
+    log.info(f"[nlp_analysis] 试验 {len(trials)} 条；全库 Top10: "
           + ", ".join(f"{w}({c})" for w, c in all_counter.most_common(10)))
-    print(f"[nlp_analysis] 完成 -> {out}")
+    log.info(f"[nlp_analysis] 完成 -> {out}")
     return out
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     run()

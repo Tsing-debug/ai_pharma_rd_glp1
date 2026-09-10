@@ -3,15 +3,25 @@
 场景：数字渠道投放对比实验 —— 对照组（标准内容） vs 实验组（GLP-1 教育内容）
 输出：Welch t 检验 + bootstrap 95% CI + 功效分析（全部标准库实现）
 """
+import logging
 import math
 import random
 import statistics
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+log = logging.getLogger(__name__)
 
-SEED = 42
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
+SEED = config.SEED
+
+try:
+    from scipy.stats import t as _t_dist
+    _HAS_SCIPY = True
+except ImportError:
+    _HAS_SCIPY = False
 
 
 def simulate_campaign(n_control=800, n_test=800, seed=SEED) -> dict:
@@ -26,9 +36,9 @@ def simulate_campaign(n_control=800, n_test=800, seed=SEED) -> dict:
 
 
 def _welch_t(a: list[float], b: list[float]) -> tuple[float, float]:
-    """Welch t 检验（双尾）。返回 (t 统计量, 近似 p 值)。
+    """Welch t 检验（双尾）。返回 (t 统计量, p 值)。
 
-    p 值用正态近似 + 学生 t 自由度校正；无 scipy 时精度足够演示用途。
+    p 值优先用学生 t 分布（scipy，小样本更准）；scipy 缺失时回退到正态近似。
     """
     na, nb = len(a), len(b)
     ma, mb = statistics.mean(a), statistics.mean(b)
@@ -37,8 +47,11 @@ def _welch_t(a: list[float], b: list[float]) -> tuple[float, float]:
     t = (ma - mb) / se if se > 0 else 0.0
     df = (va / na + vb / nb) ** 2 / (
         (va / na) ** 2 / (na - 1) + (vb / nb) ** 2 / (nb - 1) + 1e-12)
-    # 双侧 p 值（正态近似）
-    p = 2.0 * (1.0 - _normal_cdf(abs(t)))
+    if _HAS_SCIPY:
+        p = 2.0 * _t_dist.sf(abs(t), df)
+    else:
+        # 双侧 p 值（正态近似，scipy 缺失时的回退）
+        p = 2.0 * (1.0 - _normal_cdf(abs(t)))
     return t, p
 
 
@@ -91,14 +104,15 @@ def run_ab_test() -> dict:
         "needed_n_for_80pct_power": power_analysis(conv_t - conv_c),
         "is_simulated": 1,
     }
-    print("[hypothesis_testing] A/B 结果：")
-    print(f"  对照组转化率 {result['conv_control_pct']}% vs 实验组 {result['conv_test_pct']}% "
+    log.info("[hypothesis_testing] A/B 结果：")
+    log.info(f"  对照组转化率 {result['conv_control_pct']}% vs 实验组 {result['conv_test_pct']}% "
           f"（提升 {result['lift_pct']}%）")
-    print(f"  Welch t = {result['t_stat']}, p = {result['p_value']}"
+    log.info(f"  Welch t = {result['t_stat']}, p = {result['p_value']}"
           + ("（显著）" if p_value < 0.05 else "（不显著）"))
-    print(f"  bootstrap 95% CI（绝对差，百分点）: {result['boot_ci_diff']}")
+    log.info(f"  bootstrap 95% CI（绝对差，百分点）: {result['boot_ci_diff']}")
     return result
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     run_ab_test()

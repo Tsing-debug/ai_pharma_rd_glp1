@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: pip install numpy scipy scikit-learn
+      - name: Compile check
+        run: python -m py_compile src/*.py config.py
+      - name: Prepare fallback data
+        # 生成 fallback 试验数据，让数据泄露回归测试（TestNoLeakageFeatures）真正有数据可测
+        run: python -c "import sys; sys.path.insert(0,'src'); from ingest_clinicaltrials import load_fallback as l1; from ingest_openfda import load_fallback as l2; l1(); l2()"
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v

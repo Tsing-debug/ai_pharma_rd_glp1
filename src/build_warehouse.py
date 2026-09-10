@@ -5,9 +5,12 @@
 3) 执行 sql/analysis_queries.sql，结果写入 data/processed/query_results/
 """
 import csv
+import logging
 import sqlite3
 import sys
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -28,6 +31,19 @@ def build():
 
     # 1) 建表
     cur.executescript((config.SQL_DIR / "schema.sql").read_text(encoding="utf-8"))
+
+    # 索引优化（大幅提升查询性能）
+    cur.executescript("""
+        -- 事实表索引
+        CREATE INDEX IF NOT EXISTS idx_fact_brand_sales_year ON fact_brand_sales(year);
+        CREATE INDEX IF NOT EXISTS idx_fact_brand_sales_brand_year ON fact_brand_sales(brand_id, year);
+        CREATE INDEX IF NOT EXISTS idx_fact_brand_sales_sim ON fact_brand_sales(is_simulated);
+        CREATE INDEX IF NOT EXISTS idx_fact_trials_nct ON fact_trials(nct_id);
+        CREATE INDEX IF NOT EXISTS idx_fact_trials_phase ON fact_trials(phase);
+        CREATE INDEX IF NOT EXISTS idx_fact_faers_molecule ON fact_faers(molecule);
+        CREATE INDEX IF NOT EXISTS idx_fact_faers_year ON fact_faers(year);
+        CREATE INDEX IF NOT EXISTS idx_fact_faers_event ON fact_faers(event_type);
+    """)
 
     # 2) 维度表
     years = sorted({int(r["year"]) for r in _load_csv(config.DATA_RAW / "financials_lilly_novo.csv")}
@@ -64,10 +80,12 @@ def build():
 
     trials = _load_csv(config.DATA_PROCESSED / "trials.csv")
     cur.executemany(
-        "INSERT OR IGNORE INTO fact_trials(nct_id, company, molecule, phase, indication, status, start_year, enrollment, is_simulated) "
-        "VALUES (?,?,?,?,?,?,?,?,?)",
+        "INSERT OR IGNORE INTO fact_trials(nct_id, company, molecule, phase, indication, status, start_year, enrollment, title, design, endpoint, recruitment, is_simulated) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [(r["nct_id"], r["company"], r["molecule"], r["phase"], r["indication"],
-          r["status"], int(r["start_year"] or 0), int(r["enrollment"] or 0), int(r["is_simulated"]))
+          r["status"], int(r["start_year"] or 0), int(r["enrollment"] or 0),
+          r.get("title", ""), r.get("design", ""), r.get("endpoint", ""), r.get("recruitment", ""),
+          int(r["is_simulated"]))
          for r in trials])
 
     faers = _load_csv(config.DATA_PROCESSED / "faers.csv")
@@ -87,7 +105,7 @@ def build():
         try:
             rows = cur.execute(stmt).fetchall()
         except sqlite3.Error as exc:
-            print(f"  [build_warehouse] 查询 Q{i} 失败: {exc}")
+            log.info(f"  [build_warehouse] 查询 Q{i} 失败: {exc}")
             continue
         if not rows:
             continue
@@ -97,25 +115,44 @@ def build():
             writer = csv.writer(f)
             writer.writerow(cols)
             writer.writerows(rows)
-        print(f"  [build_warehouse] Q{i} -> {path.name} ({len(rows)} 行)")
+        log.info(f"  [build_warehouse] Q{i} -> {path.name} ({len(rows)} 行)")
 
     conn.close()
-    print(f"[build_warehouse] 数仓构建完成 -> {db}")
+    log.info(f"[build_warehouse] 数仓构建完成 -> {db}")
 
 
 def _split_statements(script: str) -> list[str]:
-    """按分号拆分 SQL（忽略注释行）。"""
+    """按分号拆分 SQL（忽略 -- 注释，含行内注释；字符串字面量内的分号不算终止符）。
+
+    末条语句缺分号时也保留（SQLite 可执行）。
+    """
     stmts, buf = [], []
+    in_string = False
     for line in script.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("--"):
+        # 不在字符串内时剥掉行内 -- 注释
+        stripped = line
+        if not in_string:
+            cut = stripped.find("--")
+            if cut != -1:
+                stripped = stripped[:cut]
+        stripped = stripped.strip()
+        if not stripped:
             continue
-        buf.append(line)
-        if stripped.endswith(";"):
+
+        # 扫描该行维护字符串状态（'' 转义会两次翻转，净效果正确）
+        for ch in stripped:
+            if ch == "'":
+                in_string = not in_string
+
+        buf.append(stripped)
+        if not in_string and stripped.endswith(";"):
             stmts.append("\n".join(buf))
             buf = []
+    if buf:  # 末条语句无分号
+        stmts.append("\n".join(buf))
     return stmts
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     build()

@@ -7,6 +7,7 @@ import csv
 import sys
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +47,26 @@ def to_table(rows: list[dict]) -> dict:
         return {"列": []}
     cols = list(rows[0].keys())
     return {c: [r[c] for r in rows] for c in cols}
+
+
+def _pivot(rows: list[dict], x: str, series: str | None, y: str) -> pd.DataFrame:
+    """简易透视：返回 DataFrame（x 为行索引、series 为列），兼容新版 st.line_chart。
+
+    旧版直接传 dict 的写法在 streamlit 1.30+ 已弃用。
+    """
+    def _key(v):
+        try:
+            return (0, float(v))  # 数值优先，保持时间顺序
+        except (TypeError, ValueError):
+            return (1, str(v))
+    idx = sorted({r[x] for r in rows}, key=_key)
+    out: dict[str, list] = {}
+    for r in rows:
+        sv = r[series] if series else y  # 无 series 时用指标名作列
+        out.setdefault(sv, [None] * len(idx))[idx.index(r[x])] = float(r[y])
+    df = pd.DataFrame(out, index=idx)
+    df.index.name = x
+    return df
 
 
 st.sidebar.title("🎯 Lilly GLP-1 Commercial Analytics")
@@ -111,18 +132,3 @@ else:
         st.subheader("临床管线：公司 × 阶段（真实数据）")
         st.dataframe(to_table(trials))
     st.caption("数据来源：FDA OpenFDA / ClinicalTrials.gov，样例子集；API 全量接入见 src/ingest_*.py。")
-
-
-def _pivot(rows: list[dict], x: str, series: str | None, y: str) -> dict:
-    """简易透视：{系列: [按 x 升序对齐的值]}，兼容 st.line_chart。"""
-    def _key(v):
-        try:
-            return (0, float(v))  # 数值优先，保持时间顺序
-        except (TypeError, ValueError):
-            return (1, str(v))
-    idx = sorted({r[x] for r in rows}, key=_key)
-    out: dict[str, dict] = {}
-    for r in rows:
-        sv = r[series] if series else "value"
-        out.setdefault(sv, {})[r[x]] = float(r[y])
-    return {sv: [m.get(i, 0.0) for i in idx] for sv, m in out.items()}

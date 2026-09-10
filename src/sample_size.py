@@ -8,9 +8,12 @@
 输出：data/processed/sample_size_results.csv
 """
 import csv
+import logging
 import math
 import sys
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -58,10 +61,11 @@ def run() -> Path:
         writer.writeheader()
         writer.writerows(rows)
     for r in rows:
-        print(f"[sample_size] {r['scenario']} -> 每组 {r['n_per_arm']} 例（总 {r['total_n']}）")
-    print(f"[sample_size] 完成 -> {out}")
+        log.info(f"[sample_size] {r['scenario']} -> 每组 {r['n_per_arm']} 例（总 {r['total_n']}）")
+    log.info(f"[sample_size] 完成 -> {out}")
     return out
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     run()

@@ -19,6 +19,8 @@ python src/run_pipeline.py
 pip install -r requirements.txt
 # 交互看板：
 streamlit run dashboard/app.py
+# 单元测试（统计公式对照 scipy 验证、数据泄露回归）：
+python -m unittest discover -s tests -v
 ```
 
 流水线输出：

@@ -1,11 +1,11 @@
-nct_id,company,molecule,phase,indication,status,start_year,enrollment,is_simulated
-NCT03548987,Eli Lilly,tirzepatide,Phase 3,Type 2 Diabetes (SURPASS-1),Completed,2018,478,0
-NCT03954834,Eli Lilly,tirzepatide,Phase 3,Type 2 Diabetes (SURPASS-2),Completed,2019,1879,0
-NCT04039503,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-1),Completed,2019,2539,0
-NCT04657016,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-2),Completed,2021,938,0
-NCT05848739,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-5, head-to-head vs semaglutide),Completed,2023,751,0
-NCT04881760,Eli Lilly,orforglipron,Phase 3,Obesity (ATTAIN-1),Active,2022,607,0
-NCT04977479,Eli Lilly,orforglipron,Phase 3,Type 2 Diabetes (ACHIEVE-1),Active,2021,497,0
-NCT03552757,Novo Nordisk,semaglutide,Phase 3,Obesity (STEP-1),Completed,2018,1961,0
-NCT04283175,Novo Nordisk,semaglutide,Phase 3,Heart Failure (SELECT),Completed,2020,17604,0
-NCT05046933,Novo Nordisk,semaglutide,Phase 3,Obesity (STEP-UP),Completed,2021,1410,0
+nct_id,company,molecule,phase,indication,status,start_year,enrollment,title,design,endpoint,recruitment,is_simulated
+NCT03548987,Eli Lilly,tirzepatide,Phase 3,Type 2 Diabetes (SURPASS-1),Completed,2018,478,SURPASS-1: A Study of Tirzepatide Versus Placebo in Patients With Type 2 Diabetes,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: change in HbA1c from baseline to week 40,Global recruitment,0
+NCT03954834,Eli Lilly,tirzepatide,Phase 3,Type 2 Diabetes (SURPASS-2),Completed,2019,1879,SURPASS-2: A Study of Tirzepatide Versus Semaglutide in Patients With Type 2 Diabetes,Double-blind, randomized, active-controlled,Parallel-group,Primary endpoint: change in HbA1c from baseline to week 40,Global recruitment,0
+NCT04039503,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-1),Completed,2019,2539,SURMOUNT-1: A Study of Tirzepatide in Subjects With Obesity,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: percentage change in body weight from baseline to week 72,Global recruitment,0
+NCT04657016,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-2),Completed,2021,938,SURMOUNT-2: A Study of Tirzepatide in Subjects With Obesity and Type 2 Diabetes,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: percentage change in body weight from baseline to week 72,Global recruitment,0
+NCT05848739,Eli Lilly,tirzepatide,Phase 3,Obesity (SURMOUNT-5, head-to-head vs semaglutide),Completed,2023,751,SURMOUNT-5: A Study of Tirzepatide Versus Semaglutide in Subjects With Obesity,Double-blind, randomized, active-controlled,Parallel-group,Primary endpoint: percentage change in body weight from baseline to week 72,Global recruitment,0
+NCT04881760,Eli Lilly,orforglipron,Phase 3,Obesity (ATTAIN-1),Active,2022,607,ATTAIN-1: A Study of Orforglipron in Subjects With Obesity,Open-label, randomized,Parallel-group,Primary endpoint: percentage change in body weight from baseline to week 36,Global recruitment,0
+NCT04977479,Eli Lilly,orforglipron,Phase 3,Type 2 Diabetes (ACHIEVE-1),Active,2021,497,ACHIEVE-1: A Study of Orforglipron in Patients With Type 2 Diabetes,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: change in HbA1c from baseline to week 28,Global recruitment,0
+NCT03552757,Novo Nordisk,semaglutide,Phase 3,Obesity (STEP-1),Completed,2018,1961,STEP-1: A Study of Semaglutide in Subjects With Obesity,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: percentage change in body weight from baseline to week 68,Global recruitment,0
+NCT04283175,Novo Nordisk,semaglutide,Phase 3,Heart Failure (SELECT),Completed,2020,17604,SELECT: A Study of Semaglutide in Patients With Cardiovascular Outcomes,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: time to first occurrence of MACE,Global recruitment,0
+NCT05046933,Novo Nordisk,semaglutide,Phase 3,Obesity (STEP-UP),Completed,2021,1410,STEP-UP: A Study of Semaglutide in Subjects With Obesity,Double-blind, randomized, placebo-controlled,Parallel-group,Primary endpoint: percentage change in body weight from baseline to week 68,Global recruitment,0

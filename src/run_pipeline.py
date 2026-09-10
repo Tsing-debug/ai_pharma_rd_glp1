@@ -4,8 +4,11 @@
 核心部分仅依赖 Python 标准库；sklearn 等为可选增强。
 """
 import csv
+import logging
 import sys
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -154,9 +157,10 @@ def build_executive_brief(ab: dict) -> Path:
 
 
 def main():
-    print("=" * 60)
-    print("Lilly GLP-1 Commercial Analytics Pipeline")
-    print("=" * 60)
+    config.setup_logging()
+    log.info("=" * 60)
+    log.info("Lilly GLP-1 Commercial Analytics Pipeline")
+    log.info("=" * 60)
 
     config.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     ingest_trials()
@@ -169,9 +173,9 @@ def main():
     ab = run_ab_test()
     run_forecasting()
     brief = build_executive_brief(ab)
-    print(f"[run_pipeline] 高管简报 -> {brief}")
-    print("=" * 60)
-    print("完成。看板：streamlit run dashboard/app.py")
+    log.info(f"[run_pipeline] 高管简报 -> {brief}")
+    log.info("=" * 60)
+    log.info("完成。看板：streamlit run dashboard/app.py")
 
 
 if __name__ == "__main__":

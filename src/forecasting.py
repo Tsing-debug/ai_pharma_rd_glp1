@@ -5,10 +5,13 @@
 全部标准库实现；statsmodels ARIMA / Prophet 可后续接入做对比（见 requirements）。
 """
 import csv
+import logging
 import math
 import statistics
 import sys
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config
@@ -100,15 +103,16 @@ def run_forecasting() -> Path:
         writer.writerow(["brand_id", "year", "revenue_usd_m", "type", "mape_backtest_pct"])
         for brand, points in series.items():
             res = forecast_brand(points)
-            print(f"[forecasting] {brand}: 回测 MAPE={res['mape_ensemble']}%")
+            log.info(f"[forecasting] {brand}: 回测 MAPE={res['mape_ensemble']}%")
             for y, v in zip(res["years"], res["vals"]):
                 writer.writerow([brand, y, round(v, 1), "actual", ""])
             for fy, fv in res["forecast"]:
                 writer.writerow([brand, fy, round(fv, 1), "forecast", res["mape_ensemble"]])
             rows.append(res)
-    print(f"[forecasting] 完成 -> {out}")
+    log.info(f"[forecasting] 完成 -> {out}")
     return out
 
 
 if __name__ == "__main__":
+    config.setup_logging()
     run_forecasting()
