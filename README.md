@@ -127,3 +127,113 @@ ai_pharma_rd_glp1/
 - [ ] Power BI 版看板（商业岗位备用）
 
 ---
+# GLP-1 × AI in Pharma R&D Analysis
+
+Using the GLP-1 metabolic disease landscape (tirzepatide / semaglutide) as a real-world case study, this repository demonstrates the full lifecycle of an AI implementation project from 0 to 1: data ingestion → feature engineering → modeling & evaluation → statistical design → dashboards & reports.
+
+## ⚠️ Data Honesty Principle
+
+All data in this repository either comes from real public sources (ClinicalTrials.gov / FDA OpenFDA / company annual reports) or is explicitly labeled as "calibrated simulation" (filenames containing `_sim`, field `is_simulated=1`).
+
+## Project Highlights
+
+- **AI applied to real R&D scenarios**: clinical trial outcome prediction (LR / RF / hand-written 3-layer MLP with numpy backpropagation, 5-fold CV AUC)
+- **Fully reproducible pipeline**: one command chains data ingestion → data warehouse modeling → AI modeling → statistical design → automated reports
+- **Zero-dependency core pipeline**: runs with only Python standard library + numpy — can be executed live in interviews
+- **Data authenticity built in**: real and simulated data are strictly separated, with labeling standards enforced in both code and documentation
+- **Multi-functional coverage**: AI modeling + biostatistics + NLP text mining + business analytics dashboard
+
+## Quick Start
+
+```bash
+cd ai_pharma_rd_glp1
+
+# Core pipeline (zero dependencies — only Python standard library + numpy required)
+python src/run_pipeline.py
+
+# Optional dependencies (strongly recommended)
+pip install -r requirements.txt
+
+# Interactive dashboard
+streamlit run dashboard/app.py
+
+# Unit tests (statistical formulas cross-validated against scipy, data leakage regression)
+python -m unittest discover -s tests -v
+```
+
+### Pipeline Outputs
+
+| Output File | Description |
+|---|---|
+| `data/processed/analytics.db` | SQLite data warehouse (star schema) |
+| `data/processed/query_results/*.csv` | SQL analysis query results (market share, growth rate, launch tracker, safety signals) |
+| `data/processed/trial_model_results.csv` | AI clinical trial outcome prediction (3 models × 5-fold CV AUC + feature importance) |
+| `data/processed/trial_nlp_keywords.csv` | Trial pipeline text mining keywords |
+| `data/processed/sample_size_results.csv` | Biostatistical sample size calculations |
+| `data/processed/patient_segments.csv` | Patient segmentation results |
+| `data/processed/forecast_*.csv` | Brand sales forecasting (with MAPE backtesting) |
+| `reports/executive_brief.md` | Auto-generated executive brief |
+
+## Project Structure
+
+```
+ai_pharma_rd_glp1/
+├── sql/
+│   ├── schema.sql                         # Star schema DDL (fact + dimension tables)
+│   └── analysis_queries.sql               # Business analytics queries (share/growth/launch/safety signals)
+├── data/
+│   ├── raw/
+│   │   ├── financials_lilly_novo.csv      # Real (approximate): Lilly/Novo brand annual revenue
+│   │   ├── china_market_sim.csv           # Simulated (labeled): China GLP-1 market sizing
+│   │   ├── clinical_trials_sample.csv     # Real: representative clinical trials (incl. SURMOUNT/SURPASS series)
+│   │   └── faers_sample.csv               # Real (sample): FAERS adverse event signals
+│   └── processed/                         # Pipeline outputs
+├── src/
+│   ├── ingest_clinicaltrials.py           # ClinicalTrials.gov API ingestion (auto-fallback to sample on failure)
+│   ├── ingest_openfda.py                  # FDA OpenFDA FAERS ingestion (auto-fallback to sample on failure)
+│   ├── build_warehouse.py                 # Build SQLite warehouse + execute analysis SQL
+│   ├── trial_ai_models.py                 # [AI Core] LR/RF + hand-written 3-layer MLP + CV AUC
+│   ├── sample_size.py                     # [Biostatistics] Sample size / power calculation
+│   ├── nlp_analysis.py                    # [NLP] Trial pipeline text mining
+│   ├── patient_segmentation.py            # Patient segmentation (K-Means, pure-Python fallback when deps missing)
+│   ├── hypothesis_testing.py              # A/B testing: Welch's t-test + bootstrap CI + power analysis
+│   ├── forecasting.py                     # Brand sales forecasting: linear trend + CAGR damping ensemble + MAPE backtesting
+│   └── run_pipeline.py                    # Main entry: ingestion → warehouse → AI modeling → stats → report
+├── dashboard/app.py                       # Streamlit dashboard (4 pages: brand / market / patient / safety)
+├── docs/
+│   ├── resume_project_description.md      # Resume project description (bullet + STAR)
+│   └── interview_qa.md                    # Interview follow-up Q&A
+├── config.py
+└── requirements.txt
+```
+
+## Data Sources & Authenticity Labeling
+
+| Data | Authenticity | Source | Refresh Method |
+|---|---|---|---|
+| Brand annual revenue (Mounjaro/Zepbound/Trulicity/Ozempic/Wegovy) | Real (approximate, labeled) | Company annual reports / public media; verify against latest 10-K/annual report before formal use | `src/ingest_financials.py` (template) |
+| Clinical trial pipeline | Real | ClinicalTrials.gov API v2 | `python src/ingest_clinicaltrials.py` |
+| Adverse event signals | Real | FDA OpenFDA drug/event | `python src/ingest_openfda.py` |
+| China GLP-1 market sizing | Simulated (labeled) | Calibrated against public reports (CDE approvals, NRDL negotiations, epidemiology) | Replaceable after CDE/NHSA public data integration |
+| Patient profile pool | Simulated (labeled) | Calibrated against public prevalence/consumer survey parameters | — |
+
+## Capability Mapping for Pfizer AI Pilot (Deep Learning Engineer Track)
+
+| JD Requirement | Corresponding Implementation |
+|---|---|
+| AI solving real pharma R&D problems | Clinical trial outcome prediction (LR/RF/hand-written MLP, 5-fold CV AUC) — directly applicable to R&D scenarios |
+| Deep learning / neural networks | `trial_ai_models.py`: numpy hand-written 3-layer MLP backpropagation (framework-free, derivable on the spot) |
+| AI implementation project 0→1 | `run_pipeline.py` one-click chaining: data ingestion → feature engineering → modeling & evaluation → reporting |
+| Biostatistical analysis (CRDC function) | `sample_size.py`: sample size/power calculation; `hypothesis_testing.py`: t-test + bootstrap |
+| Safety data processing & evaluation (CRDC function) | OpenFDA FAERS ingestion + safety signal SQL + severity rate metrics |
+| Phase I–IV clinical trial data | ClinicalTrials.gov API v2 real pipeline (~1,000 records) + warehouse modeling |
+| Data science / bioinformatics background fit | NLP text mining + statistics + ML full-stack coverage |
+| Multinational enterprise engineering mindset | Data authenticity labeling, zero-dependency reproducibility, CI-friendly (.github/workflows addable) |
+
+## Roadmap
+
+- Refresh the full pipeline with latest ClinicalTrials.gov data (`python src/ingest_clinicaltrials.py`)
+- Expand AI module: add features (trial duration, double-blind design, number of sites) and baseline model comparison
+- China localization (CDE approval list, NRDL catalog) as bonus demonstration
+- Document GCP / data management awareness (Pfizer CRDC keywords)
+- Power BI version of the dashboard (for business roles)
